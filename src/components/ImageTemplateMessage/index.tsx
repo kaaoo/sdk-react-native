@@ -17,12 +17,13 @@ import { useTheme } from '../../hooks/theme';
 
 interface Props {
   payload: ImageTemplatePayload;
+  onSend: (clearInput: boolean, messageText?: string) => Promise<void>;
   isUser: boolean;
   style?: ViewStyle;
 }
 const screenWidth = Dimensions.get('screen').width;
 
-const ImageTemplateMessage = ({ payload, isUser, style }: Props) => {
+const ImageTemplateMessage = ({ payload, isUser, style, onSend }: Props) => {
   const { colors } = useColors();
   const { theme } = useTheme();
   const [isReady, setIsReady] = useState(false);
@@ -123,7 +124,9 @@ const ImageTemplateMessage = ({ payload, isUser, style }: Props) => {
             },
           ]}
         />
-        {showButtons && <ActionButtonList buttons={payload.buttons} />}
+        {showButtons && (
+          <ActionButtonList buttons={payload.buttons} onSend={onSend} />
+        )}
       </TouchableOpacity>
       <Modal
         animationType="slide"

@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2024-03-15
+
+### Changed
+- Expandable input of a new message (max 4 lines)
+
+### Fixed
+- Keyboard - submit should be replaced with 'newline' button, and kept opened
+- Send button caption is not saved in conversation history after click
+- Retrials of attachments
+- Email address domain is interpreted as URL
+
 ## [1.1.0] - 2024-03-12
 
 ### Added

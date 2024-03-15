@@ -28,8 +28,7 @@ export const TextMessage = ({
 
   const detectLinks = useMemo(() => {
     const linkRegex =
-      /(?:http[s]?:\/\/)?(?:www\.)?([a-zA-Z0-9.-]+)\.([a-zA-Z]{2,})(?:\/\S*)?/g;
-
+      /(?:(?:https?|ftp|file):\/\/|www\.|ftp\.)(?:\([-A-Z0-9+&@#\/%=~_|$?!:,.]*\)|[-A-Z0-9+&@#\/%=~_|$?!:,.])*(?:\([-A-Z0-9+&@#\/%=~_|$?!:,.]*\)|[A-Z0-9+&@#\/%=~_|$])/gim;
     const matches = text.match(linkRegex);
 
     if (!matches) {
@@ -69,11 +68,7 @@ export const TextMessage = ({
 
   const handleLinkPress = async (url: string) => {
     try {
-      if (url.startsWith('www')) {
-        await Linking.openURL('https://' + url);
-      } else {
-        await Linking.openURL(url);
-      }
+      await Linking.openURL('https://' + url);
     } catch (e) {}
   };
 

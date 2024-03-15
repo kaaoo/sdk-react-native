@@ -11,6 +11,9 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingVertical: 20,
   },
+  activityIndicator: {
+    marginVertical: 40,
+  },
 });
 
 export default styles;

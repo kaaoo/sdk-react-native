@@ -243,3 +243,23 @@ export const statusTranslate = (
       return status;
   }
 };
+
+export async function fetchWithTimeout(
+  url: string,
+  options: RequestInit & { timeout?: number } = {}
+): Promise<Response> {
+  const { timeout = 3000 } = options;
+
+  const abortController = new AbortController();
+  const id = setTimeout(() => abortController.abort(), timeout);
+  const response = await fetch(url, {
+    ...options,
+    signal: abortController.signal,
+  }).finally(() => clearTimeout(id));
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  return response;
+}

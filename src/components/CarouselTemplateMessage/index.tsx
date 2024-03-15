@@ -9,9 +9,10 @@ import { useTheme } from '../../hooks/theme';
 
 interface Props {
   payload: CarouselTemplatePayload;
+  onSend: (clearInput: boolean, messageText?: string) => Promise<void>;
   style?: ViewStyle;
 }
-const CarouselTemplateMessage = ({ payload, style }: Props) => {
+const CarouselTemplateMessage = ({ payload, style, onSend }: Props) => {
   const { colors } = useColors();
   const { theme } = useTheme();
 
@@ -82,7 +83,7 @@ const CarouselTemplateMessage = ({ payload, style }: Props) => {
                 {element.subtitle}
               </Text>
             </View>
-            <ActionButtonList buttons={element.buttons} />
+            <ActionButtonList onSend={onSend} buttons={element.buttons} />
           </View>
         );
       })}

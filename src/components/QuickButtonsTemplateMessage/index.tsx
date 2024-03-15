@@ -5,12 +5,6 @@ import type {
   QuickButtonsTemplatePayload,
 } from '../../types/queries';
 import { TextMessage } from '../TextMessage';
-import { useMutation } from '@apollo/client';
-import {
-  SEND_BUTTON_MUTATION,
-  SEND_TEXT_MUTATION,
-} from '../../utils/mutations';
-import { useUserInfo } from '../../hooks/userInfo';
 import styles from './styles';
 import { useColors } from '../../hooks/colors';
 import { useTheme } from '../../hooks/theme';
@@ -19,6 +13,7 @@ interface Props {
   scrollToLatest: () => void;
   isNewest: boolean;
   time: number;
+  onSend: (clearInput: boolean, messageText?: string) => Promise<void>;
 }
 
 const QuickButtonsTemplateMessage = ({
@@ -26,52 +21,16 @@ const QuickButtonsTemplateMessage = ({
   scrollToLatest,
   isNewest,
   time,
+  onSend,
 }: Props) => {
-  const { userInfo } = useUserInfo();
   const { colors } = useColors();
   const { theme } = useTheme();
 
-  const [sendText] = useMutation(SEND_TEXT_MUTATION);
-  const [sendButton] = useMutation(SEND_BUTTON_MUTATION);
-
-  const onSendButton = async (buttonId: string) => {
+  const onPressButton = async (btn: QuickButton) => {
     try {
-      await sendButton({
-        variables: {
-          conversationId: userInfo.conversationId,
-          buttonId,
-        },
-        context: {
-          headers: {
-            Authorization: `Bearer ${userInfo.token}`,
-          },
-        },
-      });
-    } catch (err) {}
-  };
-
-  const onSendText = async (text: string) => {
-    await sendText({
-      variables: {
-        conversationId: userInfo.conversationId,
-        text,
-      },
-      context: {
-        headers: {
-          Authorization: `Bearer ${userInfo.token}`,
-        },
-      },
-    });
-    scrollToLatest();
-  };
-
-  const onSend = async (btn: QuickButton) => {
-    if (btn.buttonId) {
-      await onSendButton(btn.buttonId);
-    } else {
-      await onSendText(btn.caption);
-    }
-    scrollToLatest();
+      await onSend(false, btn.caption);
+      scrollToLatest();
+    } catch (e) {}
   };
   return (
     <View style={styles.container}>
@@ -95,7 +54,7 @@ const QuickButtonsTemplateMessage = ({
                   borderColor: theme.quickButtonBorderColor,
                 },
               ]}
-              onPress={async () => await onSend(btn)}
+              onPress={() => onPressButton(btn)}
             >
               <Text
                 style={[styles.text, { color: colors.quickButtonTextColor }]}

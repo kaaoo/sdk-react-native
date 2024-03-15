@@ -7,6 +7,7 @@ import {
   View,
   type ViewStyle,
   type ViewToken,
+  ActivityIndicator,
 } from 'react-native';
 import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import styles from './style';
@@ -79,6 +80,7 @@ const MainView = ({
   onStartChatError,
 }: Props) => {
   useUserActivity();
+
   const { translations } = useTranslations();
   const { colors } = useColors();
   const { userInfo, setUserInfo } = useUserInfo();
@@ -89,6 +91,7 @@ const MainView = ({
   const [showTyping, setShowTyping] = useState(false);
   const [isNewestReaded, setIsNewestReaded] = useState(false);
   const [isNewestMessageVisible, setIsNewestMessageVisible] = useState(false);
+  const [chatInitLoading, setChatInitLoading] = useState(false);
 
   const [sendText] = useMutation(SEND_TEXT_MUTATION);
   const listRef = useRef<FlatList>(null);
@@ -118,7 +121,7 @@ const MainView = ({
       id: tempId,
       payload: {
         __typename: PayloadTypes.Text,
-        value: messageText || text,
+        value: messageText?.trim() || text?.trim(),
       },
       author: {
         userId: userInfo.userId,
@@ -326,7 +329,7 @@ const MainView = ({
         const draftMessage = prepareFileDraftMessage(
           tempId,
           errorMessage.payload.url,
-          undefined,
+          errorMessage.payload.type,
           userInfo.userId
         );
         addNewMessage(draftMessage);
@@ -422,6 +425,11 @@ const MainView = ({
     variables: {
       conversationId: userInfo.conversationId,
     },
+    context: {
+      headers: {
+        Authorization: `Bearer ${userInfo.token}`,
+      },
+    },
     onData: ({ data }) => {
       const messageType = data.data?.newMessage.payload.__typename;
 
@@ -471,11 +479,16 @@ const MainView = ({
 
   const initChat = useCallback(async () => {
     try {
+      setChatInitLoading(true);
+
       const newUserInfo = await initializeChat(config, host, metaData);
+
       if (newUserInfo) {
         setUserInfo(newUserInfo as UserInfo);
       }
+      setChatInitLoading(false);
     } catch (e) {
+      setChatInitLoading(false);
       if (onStartChatError) {
         onStartChatError(`ZowieChat startChatError: ${e}`);
       }
@@ -579,6 +592,7 @@ const MainView = ({
               prevItemTime={messages[index + 1]?.time}
               prevItemUserId={messages[index + 1]?.author.userId}
               onPressTryAgain={onResend}
+              onSend={onSend}
             />
           )}
           ListHeaderComponent={
@@ -587,9 +601,19 @@ const MainView = ({
           ListFooterComponent={
             <TimeDate timestamp={messages[messages.length - 1]?.time} />
           }
+          ListEmptyComponent={
+            chatInitLoading ? (
+              <ActivityIndicator
+                size={'large'}
+                color={colors.placeholderTextColor}
+                style={styles.activityIndicator}
+              />
+            ) : null
+          }
         />
         <ZowieLogo />
         <NewMessage
+          disabled={chatInitLoading}
           value={text}
           onChangeText={onChangeText}
           onSend={onSend}
