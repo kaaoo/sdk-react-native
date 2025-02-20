@@ -20,9 +20,11 @@ const styles = StyleSheet.create({
     bottom: 2,
   },
   infoText: {
+    textAlign: 'left',
     fontWeight: '500',
     fontSize: 12,
     lineHeight: 12,
   },
+  linkText: { textDecorationLine: 'underline' },
 });
 export default styles;

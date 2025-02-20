@@ -140,7 +140,7 @@ export type FilePayload = {
   dimensions?: Dimensions;
 };
 
-type ButtonPayload = {
+export type ButtonPayload = {
   buttonId: string;
 };
 

@@ -3,31 +3,17 @@ import React, { memo } from 'react';
 import type { ActionButton } from '../../types/queries';
 import { useColors } from '../../hooks/colors';
 import styles from './styles';
-import { SEND_BUTTON_MUTATION } from '../../utils/mutations';
-import { useMutation } from '@apollo/client';
-import { useUserInfo } from '../../hooks/userInfo';
 interface Props {
   buttons: ActionButton[];
+  onSend: (clearInput: boolean, messageText?: string) => Promise<void>;
 }
 
-const ActionButtonList = ({ buttons }: Props) => {
+const ActionButtonList = ({ buttons, onSend }: Props) => {
   const { colors } = useColors();
-  const { userInfo } = useUserInfo();
-  const [sendButton] = useMutation(SEND_BUTTON_MUTATION);
 
-  const sendButtonMutation = async (buttonId: string) => {
+  const sendButtonMutation = async (buttonMessage: string) => {
     try {
-      await sendButton({
-        variables: {
-          conversationId: userInfo.conversationId,
-          buttonId,
-        },
-        context: {
-          headers: {
-            Authorization: `Bearer ${userInfo.token}`,
-          },
-        },
-      });
+      await onSend(false, buttonMessage);
     } catch (err) {}
   };
 
@@ -35,7 +21,7 @@ const ActionButtonList = ({ buttons }: Props) => {
     try {
       switch (button.__typename) {
         case 'ActionButtonDefault':
-          return await sendButtonMutation(button.buttonId);
+          return await sendButtonMutation(button.caption);
         case 'ActionButtonUrl':
           return await Linking.openURL(button.url);
         case 'ActionButtonCall': {

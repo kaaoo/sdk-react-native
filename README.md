@@ -75,6 +75,7 @@ interface ZowieConfig {
   authorId?: string;
   contextId?: string;
   fcmToken?: string;
+  conversationInitReferral?: string;
 }
 ```
 
@@ -196,12 +197,19 @@ const defaultTexts = {
 
 
 ## Additional Functions
-### clearSession(instanceId: string, host: string, metaData?: MetaData, contextId?: string, fcmToken?: string)
+### clearSession()
 This function allows you to reset anonymous chat session. Should be called before mount chat component.
 ```js
 import { clearSession } from './react-native-zowiesdk';
 
-await clearSession(instanceId, host);
+await clearSession();
+```
+### setReferral(referralId: string)
+This function allows you to set new referralId. Setting referral before mount new chat will the value will be overwritten ```conversationInitReferral``` from ```ZowieConfig``` to the clean session. Call setReferral when chat is mounted will send new referralId immediately
+```js
+import { setReferral } from './react-native-zowiesdk';
+
+await setReferral(my_new_referral_string);
 ```
 
 ## Troubleshooting

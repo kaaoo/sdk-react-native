@@ -7,8 +7,9 @@ import styles from './styles';
 
 interface Props {
   payload: PersistentButtonsTemplatePayload;
+  onSend: (clearInput: boolean, messageText?: string) => Promise<void>;
 }
-const PersistentButtonsTemplateMessage = ({ payload }: Props) => {
+const PersistentButtonsTemplateMessage = ({ payload, onSend }: Props) => {
   const { colors } = useColors();
   return (
     <View
@@ -27,7 +28,7 @@ const PersistentButtonsTemplateMessage = ({ payload }: Props) => {
       >
         {payload.message}
       </Text>
-      <ActionButtonList buttons={payload.buttons} />
+      <ActionButtonList buttons={payload.buttons} onSend={onSend} />
     </View>
   );
 };

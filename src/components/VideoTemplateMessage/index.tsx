@@ -21,12 +21,13 @@ interface Props {
   payload: VideoTemplatePayload;
   style?: ViewStyle;
   isUser: boolean;
+  onSend: (clearInput: boolean, messageText?: string) => Promise<void>;
 }
 
 const { Zowiesdk } = NativeModules;
 const { VideoPlayerBridge } = NativeModules;
 
-const VideoTemplateMessage = ({ payload, style, isUser }: Props) => {
+const VideoTemplateMessage = ({ payload, style, isUser, onSend }: Props) => {
   const { colors } = useColors();
   const { theme } = useTheme();
   const { setShow, setVideoUrl } = useVideo();
@@ -132,7 +133,9 @@ const VideoTemplateMessage = ({ payload, style, isUser }: Props) => {
           </ImageBackground>
         )}
       </TouchableOpacity>
-      {showButtons && <ActionButtonList buttons={payload.buttons} />}
+      {showButtons && (
+        <ActionButtonList buttons={payload.buttons} onSend={onSend} />
+      )}
     </View>
   );
 };

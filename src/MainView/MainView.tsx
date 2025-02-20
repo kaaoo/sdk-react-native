@@ -1,4 +1,5 @@
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
   InteractionManager,
@@ -36,7 +37,7 @@ import {
   mergeMessageArrays,
   prepareFileDraftMessage,
 } from '../utils/functions';
-import { SEND_TEXT_MUTATION } from '../utils/mutations';
+import { SEND_BUTTON_MUTATION, SEND_TEXT_MUTATION } from '../utils/mutations';
 import ZowieLogo from '../components/ZowieLogo';
 import { type UserInfo, useUserInfo } from '../hooks/userInfo';
 import MessageView from '../components/MessageView';
@@ -79,6 +80,7 @@ const MainView = ({
   onStartChatError,
 }: Props) => {
   useUserActivity();
+
   const { translations } = useTranslations();
   const { colors } = useColors();
   const { userInfo, setUserInfo } = useUserInfo();
@@ -89,8 +91,11 @@ const MainView = ({
   const [showTyping, setShowTyping] = useState(false);
   const [isNewestReaded, setIsNewestReaded] = useState(false);
   const [isNewestMessageVisible, setIsNewestMessageVisible] = useState(false);
+  const [chatInitLoading, setChatInitLoading] = useState(false);
 
   const [sendText] = useMutation(SEND_TEXT_MUTATION);
+  const [sendButton] = useMutation(SEND_BUTTON_MUTATION);
+
   const listRef = useRef<FlatList>(null);
 
   const scrollToLatest = () => {
@@ -108,7 +113,11 @@ const MainView = ({
     setMessages((prevState) => [message, ...prevState]);
   };
 
-  const onSend = async (clearInput = true, messageText?: string) => {
+  const onSend = async (
+    clearInput = true,
+    messageText?: string,
+    buttonId?: string
+  ) => {
     if (clearInput) {
       onChangeText('');
     }
@@ -118,7 +127,7 @@ const MainView = ({
       id: tempId,
       payload: {
         __typename: PayloadTypes.Text,
-        value: messageText || text,
+        value: messageText?.trim() || text?.trim(),
       },
       author: {
         userId: userInfo.userId,
@@ -127,34 +136,68 @@ const MainView = ({
     };
     addNewMessage(draftMessage as Message);
     try {
-      const newUserMessage = await sendText({
-        variables: {
-          conversationId: userInfo.conversationId,
-          text: messageText || text,
-        },
-        context: {
-          headers: {
-            Authorization: `Bearer ${userInfo.token}`,
+      let newUserMessage;
+      if (buttonId) {
+        newUserMessage = await sendButton({
+          variables: {
+            conversationId: userInfo.conversationId,
+            buttonId: buttonId,
           },
-        },
-      });
+          context: {
+            headers: {
+              Authorization: `Bearer ${userInfo.token}`,
+            },
+          },
+        });
+      } else {
+        newUserMessage = await sendText({
+          variables: {
+            conversationId: userInfo.conversationId,
+            text: messageText || text,
+          },
+          context: {
+            headers: {
+              Authorization: `Bearer ${userInfo.token}`,
+            },
+          },
+        });
+      }
 
-      setMessages((prevState) =>
-        prevState.map((message) =>
-          message.id === tempId
-            ? {
-                ...(newUserMessage.data.sendText as Message),
-                status: isStatusHigher(
-                  message.status,
-                  newUserMessage.data.sendText.status
-                )
-                  ? newUserMessage.data.sendText.status
-                  : message.status,
-                draft: false,
-              }
-            : message
-        )
-      );
+      if (buttonId) {
+        setMessages((prevState) =>
+          prevState.map((message) =>
+            message.id === tempId
+              ? {
+                  ...(newUserMessage.data.sendButton as Message),
+                  status: isStatusHigher(
+                    message.status,
+                    newUserMessage.data.sendButton.status
+                  )
+                    ? newUserMessage.data.sendButton.status
+                    : message.status,
+                  draft: false,
+                }
+              : message
+          )
+        );
+      } else {
+        setMessages((prevState) =>
+          prevState.map((message) =>
+            message.id === tempId
+              ? {
+                  ...(newUserMessage.data.sendText as Message),
+                  status: isStatusHigher(
+                    message.status,
+                    newUserMessage.data.sendText.status
+                  )
+                    ? newUserMessage.data.sendText.status
+                    : message.status,
+                  draft: false,
+                }
+              : message
+          )
+        );
+      }
       scrollToLatest();
     } catch (e) {
       setMessages((prevState) =>
@@ -321,12 +364,14 @@ const MainView = ({
     );
     if (errorMessage.payload.__typename === PayloadTypes.Text) {
       return await onSend(false, errorMessage.payload.value);
+    } else if (errorMessage.payload.__typename === PayloadTypes.Button) {
+      return await onSend(false, '', errorMessage.payload.buttonId);
     } else if (errorMessage.payload.__typename === PayloadTypes.File) {
       try {
         const draftMessage = prepareFileDraftMessage(
           tempId,
           errorMessage.payload.url,
-          undefined,
+          errorMessage.payload.type,
           userInfo.userId
         );
         addNewMessage(draftMessage);
@@ -422,6 +467,11 @@ const MainView = ({
     variables: {
       conversationId: userInfo.conversationId,
     },
+    context: {
+      headers: {
+        Authorization: `Bearer ${userInfo.token}`,
+      },
+    },
     onData: ({ data }) => {
       const messageType = data.data?.newMessage.payload.__typename;
 
@@ -465,17 +515,22 @@ const MainView = ({
   });
 
   const onViewableItemsChanged = useCallback(({ viewableItems }) => {
-    const isVisible = viewableItems.some((item: ViewToken) => item.index === 0); // Zakładając, że lista jest odwrócona
+    const isVisible = viewableItems.some((item: ViewToken) => item.index === 0);
     setIsNewestMessageVisible(isVisible);
   }, []);
 
   const initChat = useCallback(async () => {
     try {
+      setChatInitLoading(true);
+
       const newUserInfo = await initializeChat(config, host, metaData);
+
       if (newUserInfo) {
         setUserInfo(newUserInfo as UserInfo);
       }
+      setChatInitLoading(false);
     } catch (e) {
+      setChatInitLoading(false);
       if (onStartChatError) {
         onStartChatError(`ZowieChat startChatError: ${e}`);
       }
@@ -579,6 +634,8 @@ const MainView = ({
               prevItemTime={messages[index + 1]?.time}
               prevItemUserId={messages[index + 1]?.author.userId}
               onPressTryAgain={onResend}
+              prevItem={messages[index + 1]}
+              onSend={onSend}
             />
           )}
           ListHeaderComponent={
@@ -587,9 +644,19 @@ const MainView = ({
           ListFooterComponent={
             <TimeDate timestamp={messages[messages.length - 1]?.time} />
           }
+          ListEmptyComponent={
+            chatInitLoading ? (
+              <ActivityIndicator
+                size={'large'}
+                color={colors.placeholderTextColor}
+                style={styles.activityIndicator}
+              />
+            ) : null
+          }
         />
         <ZowieLogo />
         <NewMessage
+          disabled={chatInitLoading}
           value={text}
           onChangeText={onChangeText}
           onSend={onSend}

@@ -17,14 +17,17 @@ import ErrorMessageInfo from '../ErrorMessageInfo';
 import { notAllowedTypesToMessageList } from '../../utils/config';
 import AgentName from '../AgentName';
 import AnnouncementMessage from '../AnnouncementMessage';
+import ButtonMessage from '../ButtonMessage';
 
 interface Props {
   item: Message;
+  prevItem?: Message | undefined;
   style?: ViewStyle;
   isNewest: boolean;
   scrollToLatest: () => void;
   prevItemTime: number | undefined;
   prevItemUserId: string | undefined;
+  onSend: (clearInput: boolean, messageText?: string) => Promise<void>;
   onPressTryAgain: (errorMessage: Message) => void;
 }
 const MessageItem = ({
@@ -35,9 +38,11 @@ const MessageItem = ({
   prevItemTime,
   prevItemUserId,
   onPressTryAgain,
+  onSend,
+  prevItem,
 }: Props) => {
   const { userInfo } = useUserInfo();
-  const isUser = userInfo.userId === item.author.userId;
+  const isUser = userInfo.userId === item.author.userId || !!item?.error;
   const getMessageComponent = useCallback(() => {
     switch (item.payload.__typename) {
       case PayloadTypes.Text:
@@ -50,9 +55,26 @@ const MessageItem = ({
             time={item.time}
           />
         );
+      case PayloadTypes.Button:
+        return prevItem &&
+          prevItem.payload.__typename === PayloadTypes.QuickButtonsTemplate ? (
+          <ButtonMessage
+            prevItemPayload={prevItem.payload}
+            buttonPayload={item.payload}
+            isUser={isUser}
+            status={item.status}
+            isNewest={isNewest}
+            time={item.time}
+          />
+        ) : null;
       case PayloadTypes.ImageTemplate:
         return (
-          <ImageTemplate isUser={isUser} payload={item.payload} style={style} />
+          <ImageTemplate
+            isUser={isUser}
+            payload={item.payload}
+            style={style}
+            onSend={onSend}
+          />
         );
       case PayloadTypes.QuickButtonsTemplate:
         return (
@@ -61,6 +83,7 @@ const MessageItem = ({
             time={item.time}
             scrollToLatest={scrollToLatest}
             isNewest={isNewest}
+            onSend={onSend}
           />
         );
       case PayloadTypes.UrlButtonTemplate:
@@ -70,19 +93,32 @@ const MessageItem = ({
       case PayloadTypes.VideoTemplate:
         return (
           <VideoTemplateMessage
+            onSend={onSend}
             payload={item.payload}
             isUser={isUser}
             style={style}
           />
         );
       case PayloadTypes.PersistentButtonsTemplate:
-        return <PersistentButtonsTemplateMessage payload={item.payload} />;
+        return (
+          <PersistentButtonsTemplateMessage
+            payload={item.payload}
+            onSend={onSend}
+          />
+        );
       case PayloadTypes.CarouselTemplate:
-        return <CarouselTemplateMessage payload={item.payload} style={style} />;
+        return (
+          <CarouselTemplateMessage
+            payload={item.payload}
+            onSend={onSend}
+            style={style}
+          />
+        );
       case PayloadTypes.File:
         return (
           <FileMessage
             payload={item.payload}
+            onSend={onSend}
             isUser={isUser}
             draft={item.draft}
           />
@@ -106,7 +142,9 @@ const MessageItem = ({
     item.draft,
     isUser,
     isNewest,
+    prevItem,
     style,
+    onSend,
     scrollToLatest,
   ]);
 

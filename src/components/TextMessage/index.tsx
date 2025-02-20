@@ -5,6 +5,7 @@ import styles from './styles';
 import { statusTranslate, timestampToDate } from '../../utils/functions';
 import { useTheme } from '../../hooks/theme';
 import { useTranslations } from '../../hooks/translations';
+import type { DetectedLink } from '../../types/other';
 interface Props {
   text: string;
   isUser: boolean;
@@ -28,52 +29,72 @@ export const TextMessage = ({
 
   const detectLinks = useMemo(() => {
     const linkRegex =
-      /(?:http[s]?:\/\/)?(?:www\.)?([a-zA-Z0-9.-]+)\.([a-zA-Z]{2,})(?:\/\S*)?/g;
+      /(?:(?:https?|ftp|file):\/\/|www\.|ftp\.)(?:\([-A-Z0-9+&@#\/%=~_|$?!:,.]*\)|[-A-Z0-9+&@#\/%=~_|$?!:,.])*(?:\([-A-Z0-9+&@#\/%=~_|$?!:,.]*\)|[A-Z0-9+&@#\/%=~_|$])/gim;
+    const macroLinkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
 
-    const matches = text.match(linkRegex);
-
-    if (!matches) {
-      return <Text>{text}</Text>;
-    }
-
-    const elements: React.ReactNode[] = [];
+    let elements: JSX.Element[] = [];
+    let detectedLinks: DetectedLink[] = [];
     let lastIndex = 0;
 
-    matches.forEach((url, index) => {
-      const beforeText = text.substring(lastIndex, text.indexOf(url));
-      if (beforeText) {
-        elements.push(<Text key={`before-${index}`}>{beforeText}</Text>);
-      }
+    text.replace(macroLinkRegex, (match, displayText, url, index) => {
+      detectedLinks.push({
+        type: 'macro',
+        text: displayText,
+        url,
+        index,
+        length: match.length,
+      });
+      return match;
+    });
 
+    text.replace(linkRegex, (match, index) => {
+      if (
+        !detectedLinks.some(
+          (link) => link.index <= index && index < link.index + link.length
+        )
+      ) {
+        detectedLinks.push({
+          type: 'url',
+          text: match,
+          url: match.startsWith('http') ? match : `https://${match}`,
+          index,
+          length: match.length,
+        });
+      }
+      return match;
+    });
+
+    detectedLinks.sort((a, b) => a.index - b.index);
+
+    lastIndex = 0;
+    detectedLinks.forEach((link, i) => {
+      if (lastIndex < link.index) {
+        elements.push(
+          <Text key={`text-${i}`}>{text.substring(lastIndex, link.index)}</Text>
+        );
+      }
       elements.push(
         <Text
-          key={index}
+          key={`link-${i}`}
           style={{ color: colors.incomingMessageLinksColor }}
-          onPress={() => handleLinkPress(url)}
+          onPress={() => handleLinkPress(link.url)}
         >
-          {url}
+          {link.text}
         </Text>
       );
-
-      lastIndex = text.indexOf(url) + url.length;
+      lastIndex = link.index + link.length;
     });
 
     if (lastIndex < text.length) {
-      elements.push(
-        <Text key={`after-${matches.length}`}>{text.substring(lastIndex)}</Text>
-      );
+      elements.push(<Text key="after-last">{text.substring(lastIndex)}</Text>);
     }
 
-    return elements;
+    return <>{elements}</>;
   }, [colors.incomingMessageLinksColor, text]);
 
   const handleLinkPress = async (url: string) => {
     try {
-      if (url.startsWith('www')) {
-        await Linking.openURL('https://' + url);
-      } else {
-        await Linking.openURL(url);
-      }
+      await Linking.openURL('https://' + url);
     } catch (e) {}
   };
 

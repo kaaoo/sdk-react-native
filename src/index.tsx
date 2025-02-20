@@ -7,12 +7,17 @@ import { ApolloProvider } from '@apollo/client';
 import { UserInfoProvider } from './hooks/userInfo';
 import { VideoProvider } from './hooks/video';
 import {
-  initializeNewChat,
+  checkChatExits,
+  deleteSession,
   type MetaData,
   sendActive,
 } from './api/apiMutations';
 import { type Translations, TranslationsProvider } from './hooks/translations';
 import { type Theme, ThemeProvider } from './hooks/theme';
+import {
+  clearReferralSession,
+  setNewReferral,
+} from './utils/referralModificator';
 
 export enum ZowieAuthenticationType {
   Anonymous = 'Anonymous',
@@ -26,6 +31,7 @@ export interface ZowieConfig {
   authorId?: string;
   contextId?: string;
   fcmToken?: string;
+  conversationInitReferral?: string;
 }
 
 export interface ZowieChatProps {
@@ -41,6 +47,8 @@ export interface ZowieChatProps {
   host: string;
 }
 
+let isZowieChatMounted = false;
+
 export const ZowieChat = ({
   style,
   iosKeyboardOffset = 0,
@@ -54,6 +62,14 @@ export const ZowieChat = ({
   theme,
 }: ZowieChatProps) => {
   setHost(host);
+
+  React.useEffect(() => {
+    isZowieChatMounted = true;
+    return () => {
+      isZowieChatMounted = false;
+    };
+  }, []);
+
   return (
     <ApolloProvider client={client}>
       <TranslationsProvider customTranslations={translations}>
@@ -79,16 +95,12 @@ export const ZowieChat = ({
   );
 };
 
-export const clearSession = async (
-  instanceId: string,
-  host: string,
-  metaData?: MetaData,
-  contextId?: string,
-  fcmToken?: string
-) => {
-  setHost(host);
+export const clearSession = async () => {
   try {
-    await initializeNewChat(instanceId, host, metaData, contextId, fcmToken);
+    if (await checkChatExits()) {
+      await clearReferralSession();
+      await deleteSession();
+    }
     return 200;
   } catch (e) {
     return e;
@@ -97,6 +109,10 @@ export const clearSession = async (
 
 export const setActive = async (isActive: boolean) => {
   return await sendActive(isActive);
+};
+
+export const setReferral = async (referralId: string) => {
+  await setNewReferral(referralId, isZowieChatMounted);
 };
 
 export type { Colors, MetaData, Translations, Theme };

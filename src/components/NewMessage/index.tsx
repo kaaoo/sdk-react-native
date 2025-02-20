@@ -1,5 +1,13 @@
-import { Image, TextInput, TouchableOpacity, View } from 'react-native';
-import React, { useCallback, useRef } from 'react';
+import {
+  Image,
+  type NativeSyntheticEvent,
+  Platform,
+  TextInput,
+  type TextInputContentSizeChangeEventData,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import React, { useCallback, useRef, useState } from 'react';
 import { useColors } from '../../hooks/colors';
 import styles from './styles';
 import { useMutation } from '@apollo/client';
@@ -16,6 +24,7 @@ interface Props {
   scrollToEnd: () => void;
   onSendFileAttachment: () => void;
   onSendImageAttachment: () => void;
+  disabled?: boolean;
 }
 
 const NewMessage = ({
@@ -25,12 +34,14 @@ const NewMessage = ({
   scrollToEnd,
   onSendFileAttachment,
   onSendImageAttachment,
+  disabled,
 }: Props) => {
   const { translations } = useTranslations();
   const { colors } = useColors();
   const { userInfo } = useUserInfo();
   const [updateMessagePreview] = useMutation(UPDATE_MESSAGE_PREVIEW);
-  const showSendButton = !!(value && value.length > 0);
+  const [inputHeight, setInputHeight] = useState(20);
+  const showSendButton = !!(value?.trim() && value.length > 0);
   const inputRef = useRef<TextInput>(null);
 
   const { theme } = useTheme();
@@ -40,7 +51,7 @@ const NewMessage = ({
       await updateMessagePreview({
         variables: {
           conversationId: userInfo.conversationId,
-          previewText: text,
+          previewText: text.trim(),
         },
         context: {
           headers: {
@@ -66,25 +77,46 @@ const NewMessage = ({
     debouncedSendPreview('');
   };
 
+  const handleHeightChange = (
+    event: NativeSyntheticEvent<TextInputContentSizeChangeEventData>
+  ) => {
+    const { contentSize } = event.nativeEvent;
+    const maxHeight = (Platform.OS === 'ios' ? 20 : 24) * 4;
+    setInputHeight(
+      contentSize?.height > maxHeight ? maxHeight : contentSize.height
+    );
+  };
+
   return (
     <View
       key={'newMessage'}
       style={[
         styles.container,
         {
+          paddingVertical:
+            Platform.OS === 'android' ? (inputHeight > 50 ? 6 : 12) : 12,
           borderColor: colors.separatorColor,
+          opacity: disabled ? 0.2 : 1,
         },
       ]}
     >
       <View key={'input'} style={styles.inputContainer}>
         <TextInput
           ref={inputRef}
-          onSubmitEditing={value ? onSendNewMessage : undefined}
           onChangeText={onChangeNewMessage}
           value={value}
+          editable={!disabled}
           placeholder={translations.newMessagePlaceHolder}
           placeholderTextColor={colors.placeholderTextColor}
-          style={{ color: colors.newMessageTextColor }}
+          textAlignVertical={'top'}
+          style={{
+            fontSize: 15,
+            lineHeight: 20,
+            color: colors.newMessageTextColor,
+            height: Math.max(35, inputHeight),
+          }}
+          multiline={true}
+          onContentSizeChange={handleHeightChange}
           onFocus={() => {
             setTimeout(() => {
               scrollToEnd();

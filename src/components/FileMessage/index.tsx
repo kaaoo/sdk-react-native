@@ -19,9 +19,10 @@ interface Props {
   isUser: boolean;
   draft?: boolean;
   error?: boolean;
+  onSend: (clearInput: boolean, messageText?: string) => Promise<void>;
 }
 
-const FileMessage = ({ payload, isUser, draft }: Props) => {
+const FileMessage = ({ payload, isUser, draft, onSend }: Props) => {
   const { colors } = useColors();
   const { theme } = useTheme();
   const { translations } = useTranslations();
@@ -39,7 +40,11 @@ const FileMessage = ({ payload, isUser, draft }: Props) => {
     };
 
     return (
-      <ImageTemplateMessage payload={imageTemplatePayload} isUser={isUser} />
+      <ImageTemplateMessage
+        payload={imageTemplatePayload}
+        isUser={isUser}
+        onSend={onSend}
+      />
     );
   }
 
@@ -50,7 +55,11 @@ const FileMessage = ({ payload, isUser, draft }: Props) => {
     };
 
     return (
-      <VideoTemplateMessage payload={videoTemplatePayload} isUser={isUser} />
+      <VideoTemplateMessage
+        payload={videoTemplatePayload}
+        isUser={isUser}
+        onSend={onSend}
+      />
     );
   }
 
