@@ -65,12 +65,7 @@ export default function App() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.button}
-            onPress={async () =>
-              await clearSession(
-                'your_instance_id',
-                'example.chat.getzowie.com/api/v1/core'
-              )
-            }
+            onPress={async () => await clearSession()}
           >
             <Text style={styles.buttonText}>Clear session</Text>
           </TouchableOpacity>

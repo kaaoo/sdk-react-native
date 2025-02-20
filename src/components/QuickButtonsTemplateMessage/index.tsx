@@ -13,7 +13,11 @@ interface Props {
   scrollToLatest: () => void;
   isNewest: boolean;
   time: number;
-  onSend: (clearInput: boolean, messageText?: string) => Promise<void>;
+  onSend: (
+    clearInput: boolean,
+    messageText?: string,
+    buttonId?: string
+  ) => Promise<void>;
 }
 
 const QuickButtonsTemplateMessage = ({
@@ -28,7 +32,7 @@ const QuickButtonsTemplateMessage = ({
 
   const onPressButton = async (btn: QuickButton) => {
     try {
-      await onSend(false, btn.caption);
+      await onSend(false, btn.caption, btn.buttonId);
       scrollToLatest();
     } catch (e) {}
   };

@@ -25,6 +25,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { ZowieConfig } from 'react-native-zowiesdk';
 import { ZowieAuthenticationType } from 'react-native-zowiesdk';
 import { additionalMinuteInMs, maxMessagesPerPage } from '../utils/config';
+import { getData } from '../utils/referralModificator';
 
 const appId = Platform.OS === 'ios' ? 'herochat-ios' : 'herochat-android';
 
@@ -74,12 +75,16 @@ export const singInJwt = async (
   });
 };
 
-export const sendReferral = async (conversationId: string, token: string) => {
+export const sendReferral = async (
+  conversationId: string,
+  token: string,
+  referralId?: string
+) => {
   return await client.mutate({
     mutation: SEND_REFERRAL_MUTATION,
     variables: {
       conversationId: conversationId,
-      referralId: 'start',
+      referralId: referralId || 'start',
     },
     context: {
       headers: {
@@ -119,13 +124,17 @@ export const updateMetaData = async (
   });
 };
 
-const checkChatExits = async () => {
+export const checkChatExits = async () => {
   try {
     const token = await AsyncStorage.getItem('@token');
     return !!token;
   } catch (e) {
     return false;
   }
+};
+
+export const deleteSession = async () => {
+  await AsyncStorage.removeItem('@token');
 };
 
 const continueExistChat = async (
@@ -172,7 +181,8 @@ export const initializeNewChat = async (
   host: string,
   metaData?: MetaData,
   contextId?: string | undefined,
-  fcmToken?: string | undefined
+  fcmToken?: string | undefined,
+  conversationInitReferral?: string | undefined
 ) => {
   try {
     const responseSignup = await singUp(instanceId);
@@ -196,7 +206,15 @@ export const initializeNewChat = async (
         await AsyncStorage.setItem('@token', token);
         await AsyncStorage.setItem('@conversationId', conversationId);
         await refreshClient(host);
-        await sendReferral(conversationId, token);
+        const referralId = await getData('@referralId');
+        if (referralId) {
+          await sendReferral(conversationId, token, referralId);
+        } else if (!referralId && conversationInitReferral) {
+          await sendReferral(conversationId, token, conversationInitReferral);
+        } else {
+          await sendReferral(conversationId, token);
+        }
+
         if (metaData) {
           await updateMetaData(metaData, token, conversationId);
         }
@@ -219,7 +237,8 @@ export const initializeJwtChat = async (
   host: string,
   metaData?: MetaData,
   contextId?: string | undefined,
-  fcmToken?: string | undefined
+  fcmToken?: string | undefined,
+  conversationInitReferral?: string | undefined
 ) => {
   try {
     const responseSignin = await singInJwt(
@@ -242,7 +261,14 @@ export const initializeJwtChat = async (
       const response = await getMessages(conversationId, timestamp, token);
       const isChatEmpty = response.data?.messages.edges.length === 0;
       if (isChatEmpty) {
-        await sendReferral(conversationId, token);
+        const referralId = await getData('@referralId');
+        if (referralId) {
+          await sendReferral(conversationId, token, referralId);
+        } else if (!referralId && conversationInitReferral) {
+          await sendReferral(conversationId, token, conversationInitReferral);
+        } else {
+          await sendReferral(conversationId, token);
+        }
       }
       if (metaData) {
         await updateMetaData(metaData, token, conversationId);
@@ -277,7 +303,8 @@ export const initializeChat = async (
       host,
       metaData,
       config.contextId,
-      config.fcmToken
+      config.fcmToken,
+      config.conversationInitReferral
     );
   } else if (isChatExist) {
     return await continueExistChat(
@@ -293,7 +320,8 @@ export const initializeChat = async (
       host,
       metaData,
       config.contextId,
-      config.fcmToken
+      config.fcmToken,
+      config.conversationInitReferral
     );
   }
 };

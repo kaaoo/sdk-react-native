@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2025-02-17
+
+### Added
+- New additional function setReferral
+- ZowieConfig object have new property ```conversationInitReferral```
+
+### Changed
+- Remove parameters from cleanSession function. New session will be using props from ZowieChat component.
+- Announcement message handling macro links. ```[click here](https://github.com/)``` will be displayed as [click here](https://github.com/)
+
+### Fixed
+- Send QuickButton - from now press button sending sendButton with button id instead of sendText.
+
+
 ## [1.1.1] - 2024-03-15
 
 ### Changed

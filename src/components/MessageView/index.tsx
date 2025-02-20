@@ -17,9 +17,11 @@ import ErrorMessageInfo from '../ErrorMessageInfo';
 import { notAllowedTypesToMessageList } from '../../utils/config';
 import AgentName from '../AgentName';
 import AnnouncementMessage from '../AnnouncementMessage';
+import ButtonMessage from '../ButtonMessage';
 
 interface Props {
   item: Message;
+  prevItem?: Message | undefined;
   style?: ViewStyle;
   isNewest: boolean;
   scrollToLatest: () => void;
@@ -37,6 +39,7 @@ const MessageItem = ({
   prevItemUserId,
   onPressTryAgain,
   onSend,
+  prevItem,
 }: Props) => {
   const { userInfo } = useUserInfo();
   const isUser = userInfo.userId === item.author.userId || !!item?.error;
@@ -52,6 +55,18 @@ const MessageItem = ({
             time={item.time}
           />
         );
+      case PayloadTypes.Button:
+        return prevItem &&
+          prevItem.payload.__typename === PayloadTypes.QuickButtonsTemplate ? (
+          <ButtonMessage
+            prevItemPayload={prevItem.payload}
+            buttonPayload={item.payload}
+            isUser={isUser}
+            status={item.status}
+            isNewest={isNewest}
+            time={item.time}
+          />
+        ) : null;
       case PayloadTypes.ImageTemplate:
         return (
           <ImageTemplate
@@ -127,9 +142,10 @@ const MessageItem = ({
     item.draft,
     isUser,
     isNewest,
+    prevItem,
     style,
-    scrollToLatest,
     onSend,
+    scrollToLatest,
   ]);
 
   const shouldShowAgentName =
