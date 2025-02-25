@@ -263,3 +263,13 @@ export async function fetchWithTimeout(
 
   return response;
 }
+
+export function isDeepLink(link: string): boolean {
+  const pattern = /^(https?|file|ftp):\/\//i;
+
+  if (link.includes('://')) {
+    return !pattern.test(link);
+  }
+
+  return false;
+}
