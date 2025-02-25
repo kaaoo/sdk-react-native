@@ -1,8 +1,12 @@
-import { Image, Linking, Pressable, Text, View } from 'react-native';
+import { Image, Linking, Platform, Pressable, Text, View } from 'react-native';
 import React, { useMemo, useState } from 'react';
 import { useColors } from '../../hooks/colors';
 import styles from './styles';
-import { statusTranslate, timestampToDate } from '../../utils/functions';
+import {
+  isDeepLink,
+  statusTranslate,
+  timestampToDate,
+} from '../../utils/functions';
 import { useTheme } from '../../hooks/theme';
 import { useTranslations } from '../../hooks/translations';
 import type { DetectedLink } from '../../types/other';
@@ -94,8 +98,26 @@ export const TextMessage = ({
 
   const handleLinkPress = async (url: string) => {
     try {
-      await Linking.openURL('https://' + url);
-    } catch (e) {}
+      if (Platform.OS === 'ios') {
+        if (isDeepLink(url)) {
+          await Linking.openURL(url);
+        } else {
+          if (url.startsWith('http://')) {
+            await Linking.openURL(url.replace('http://', 'https://'));
+          } else {
+            await Linking.openURL(url);
+          }
+        }
+      } else {
+        if (url.startsWith('http://')) {
+          await Linking.openURL(url.replace('http://', 'https://'));
+        } else {
+          await Linking.openURL(url);
+        }
+      }
+    } catch (e) {
+      console.log(e);
+    }
   };
 
   return (

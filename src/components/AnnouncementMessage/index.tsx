@@ -1,9 +1,10 @@
-import { Text, View, Image, Linking } from 'react-native';
+import { Text, View, Image, Linking, Platform } from 'react-native';
 import React, { memo, useMemo } from 'react';
 import type { AnnouncementPayload } from '../../types/queries';
 import styles from './styles';
 import { useColors } from '../../hooks/colors';
 import type { DetectedLink } from '../../types/other';
+import { isDeepLink } from '../../utils/functions';
 
 interface Props {
   payload: AnnouncementPayload;
@@ -15,8 +16,26 @@ const AnnouncementMessage = ({ payload, isNewest }: Props) => {
 
   const handleLinkPress = async (url: string) => {
     try {
-      await Linking.openURL(url);
-    } catch (e) {}
+      if (Platform.OS === 'ios') {
+        if (isDeepLink(url)) {
+          await Linking.openURL(url);
+        } else {
+          if (url.startsWith('http://')) {
+            await Linking.openURL(url.replace('http://', 'https://'));
+          } else {
+            await Linking.openURL(url);
+          }
+        }
+      } else {
+        if (url.startsWith('http://')) {
+          await Linking.openURL(url.replace('http://', 'https://'));
+        } else {
+          await Linking.openURL(url);
+        }
+      }
+    } catch (e) {
+      console.log(e);
+    }
   };
 
   const detectLinks = useMemo(() => {

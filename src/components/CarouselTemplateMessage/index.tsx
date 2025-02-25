@@ -1,5 +1,5 @@
 import type { CarouselTemplatePayload } from '../../types/queries';
-import React, { memo, useMemo } from 'react';
+import React, { memo, useMemo, useState, useEffect } from 'react';
 import { Image, ScrollView, Text, View, type ViewStyle } from 'react-native';
 import ActionButtonList from '../AcitonButtonList';
 import { useColors } from '../../hooks/colors';
@@ -12,9 +12,11 @@ interface Props {
   onSend: (clearInput: boolean, messageText?: string) => Promise<void>;
   style?: ViewStyle;
 }
+
 const CarouselTemplateMessage = ({ payload, style, onSend }: Props) => {
   const { colors } = useColors();
   const { theme } = useTheme();
+  const [maxTitleHeight, setMaxTitleHeight] = useState(0);
 
   const getWidth = useMemo(() => {
     let windowWidth = screenWidth - (screenWidth * 0.23 + 20);
@@ -22,15 +24,15 @@ const CarouselTemplateMessage = ({ payload, style, onSend }: Props) => {
       if (typeof style.width === 'string') {
         windowWidth = (parseFloat(style.width) / 100) * screenWidth;
         windowWidth = windowWidth - (windowWidth * 0.23 + 20);
-      } else {
-        // @ts-ignore
-        return windowWidth;
       }
-    } else {
-      return windowWidth;
     }
     return windowWidth;
   }, [style]);
+
+  useEffect(() => {
+    // Reset max height on payload change
+    setMaxTitleHeight(0);
+  }, [payload]);
 
   return (
     <ScrollView
@@ -38,55 +40,61 @@ const CarouselTemplateMessage = ({ payload, style, onSend }: Props) => {
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.container}
     >
-      {payload.elements.map((element, i) => {
-        return (
+      {payload.elements.map((element, i) => (
+        <View
+          key={`${i}-${element?.defaultAction?.value}-${element?.title}}`}
+          style={[
+            {
+              flex: 1,
+              justifyContent: 'space-between',
+              width: getWidth,
+              backgroundColor: colors.incomingMessageBackgroundColor,
+              borderRadius: theme?.messageRadius || 12,
+            },
+          ]}
+        >
+          {!!element.imageUrl && (
+            <Image
+              source={{ uri: element.imageUrl || '' }}
+              style={[
+                styles.image,
+                {
+                  borderColor: colors.separatorColor,
+                },
+              ]}
+            />
+          )}
           <View
-            key={`${i}-${element?.defaultAction?.value}-${element?.title}}`}
-            style={[
-              {
-                width: getWidth,
-                backgroundColor: colors.incomingMessageBackgroundColor,
-                borderRadius: theme?.messageRadius || 12,
-              },
-            ]}
+            style={[styles.titlesContainer, { minHeight: maxTitleHeight }]}
+            onLayout={(event) => {
+              const { height } = event.nativeEvent.layout;
+              setMaxTitleHeight((prev) => Math.max(prev, height));
+            }}
           >
-            {!!element.imageUrl && (
-              <Image
-                source={{ uri: element.imageUrl || '' }}
-                style={[
-                  styles.image,
-                  {
-                    borderColor: colors.separatorColor,
-                  },
-                ]}
-              />
-            )}
-            <View style={styles.titlesContainer}>
-              <Text
-                style={[
-                  styles.titleText,
-                  {
-                    color: colors.incomingMessagePrimaryTextColor,
-                  },
-                ]}
-              >
-                {element.title}
-              </Text>
-              <Text
-                style={[
-                  styles.subtitleText,
-                  {
-                    color: colors.incomingMessageSecondaryTextColor,
-                  },
-                ]}
-              >
-                {element.subtitle}
-              </Text>
-            </View>
-            <ActionButtonList onSend={onSend} buttons={element.buttons} />
+            <Text
+              style={[
+                styles.titleText,
+                {
+                  color: colors.incomingMessagePrimaryTextColor,
+                },
+              ]}
+            >
+              {element.title}
+            </Text>
+            <Text
+              style={[
+                styles.subtitleText,
+                {
+                  color: colors.incomingMessageSecondaryTextColor,
+                },
+              ]}
+            >
+              {element.subtitle}
+            </Text>
           </View>
-        );
-      })}
+          <ActionButtonList onSend={onSend} buttons={element.buttons} />
+        </View>
+      ))}
     </ScrollView>
   );
 };
