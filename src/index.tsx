@@ -18,6 +18,7 @@ import {
   clearReferralSession,
   setNewReferral,
 } from './utils/referralModificator';
+import { OnPressLinkProvider } from './hooks/onPressLink';
 
 export enum ZowieAuthenticationType {
   Anonymous = 'Anonymous',
@@ -45,6 +46,7 @@ export interface ZowieChatProps {
   metaData?: MetaData;
   config: ZowieConfig;
   host: string;
+  onPressLink?: (url: string) => void;
 }
 
 let isZowieChatMounted = false;
@@ -60,6 +62,7 @@ export const ZowieChat = ({
   onStartChatError,
   translations,
   theme,
+  onPressLink,
 }: ZowieChatProps) => {
   setHost(host);
 
@@ -77,15 +80,17 @@ export const ZowieChat = ({
           <VideoProvider>
             <ColorsProvider customColors={customColors}>
               <UserInfoProvider>
-                <MainView
-                  host={host}
-                  style={style}
-                  androidKeyboardOffset={androidKeyboardOffset}
-                  iosKeyboardOffset={iosKeyboardOffset}
-                  metaData={metaData}
-                  onStartChatError={onStartChatError}
-                  config={config}
-                />
+                <OnPressLinkProvider onPressLink={onPressLink || undefined}>
+                  <MainView
+                    host={host}
+                    style={style}
+                    androidKeyboardOffset={androidKeyboardOffset}
+                    iosKeyboardOffset={iosKeyboardOffset}
+                    metaData={metaData}
+                    onStartChatError={onStartChatError}
+                    config={config}
+                  />
+                </OnPressLinkProvider>
               </UserInfoProvider>
             </ColorsProvider>
           </VideoProvider>
