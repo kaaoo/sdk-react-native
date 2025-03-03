@@ -65,6 +65,7 @@ const myConfigJwt: ZowieConfig = {
 - **onStartChatError** ((error: string) => void, optional): A function that is called when there is an error during the initialization of an existing or new chat session.
 The error argument is a string describing the nature of the error encountered. More info in Troubleshooting
 - **theme** (Theme, optional): A few additional styles for messages and quick buttons
+- **onPressLink** ((url: string) => void, optional): Function for custom handling all links in application (without phone call and file buttons)
 
 ### ZowieConfig Type
 ```ts

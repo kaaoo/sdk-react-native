@@ -10,6 +10,7 @@ import {
 import { useTheme } from '../../hooks/theme';
 import { useTranslations } from '../../hooks/translations';
 import type { DetectedLink } from '../../types/other';
+import { useOnPressLink } from '../../hooks/onPressLink';
 interface Props {
   text: string;
   isUser: boolean;
@@ -30,6 +31,39 @@ export const TextMessage = ({
   const { theme } = useTheme();
   const { translations } = useTranslations();
   const [showStatus, setShowStatus] = useState(false);
+  const onPressLink = useOnPressLink();
+
+  const handleLinkPress = React.useCallback(
+    async (url: string) => {
+      try {
+        if (onPressLink) {
+          await onPressLink(url);
+          return;
+        }
+
+        if (Platform.OS === 'ios') {
+          if (isDeepLink(url)) {
+            await Linking.openURL(url);
+          } else {
+            if (url.startsWith('http://')) {
+              await Linking.openURL(url.replace('http://', 'https://'));
+            } else {
+              await Linking.openURL(url);
+            }
+          }
+        } else {
+          if (url.startsWith('http://')) {
+            await Linking.openURL(url.replace('http://', 'https://'));
+          } else {
+            await Linking.openURL(url);
+          }
+        }
+      } catch (e) {
+        console.log(e);
+      }
+    },
+    [onPressLink]
+  );
 
   const detectLinks = useMemo(() => {
     const linkRegex =
@@ -94,31 +128,7 @@ export const TextMessage = ({
     }
 
     return <>{elements}</>;
-  }, [colors.incomingMessageLinksColor, text]);
-
-  const handleLinkPress = async (url: string) => {
-    try {
-      if (Platform.OS === 'ios') {
-        if (isDeepLink(url)) {
-          await Linking.openURL(url);
-        } else {
-          if (url.startsWith('http://')) {
-            await Linking.openURL(url.replace('http://', 'https://'));
-          } else {
-            await Linking.openURL(url);
-          }
-        }
-      } else {
-        if (url.startsWith('http://')) {
-          await Linking.openURL(url.replace('http://', 'https://'));
-        } else {
-          await Linking.openURL(url);
-        }
-      }
-    } catch (e) {
-      console.log(e);
-    }
-  };
+  }, [colors.incomingMessageLinksColor, handleLinkPress, text]);
 
   return (
     <Pressable onPress={() => setShowStatus((prevState) => !prevState)}>

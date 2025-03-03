@@ -3,6 +3,7 @@ import React, { memo } from 'react';
 import type { ActionButton } from '../../types/queries';
 import { useColors } from '../../hooks/colors';
 import styles from './styles';
+import { useOnPressLink } from '../../hooks/onPressLink';
 interface Props {
   buttons: ActionButton[];
   onSend: (clearInput: boolean, messageText?: string) => Promise<void>;
@@ -10,6 +11,7 @@ interface Props {
 
 const ActionButtonList = ({ buttons, onSend }: Props) => {
   const { colors } = useColors();
+  const onPressLink = useOnPressLink();
 
   const sendButtonMutation = async (buttonMessage: string) => {
     try {
@@ -23,7 +25,11 @@ const ActionButtonList = ({ buttons, onSend }: Props) => {
         case 'ActionButtonDefault':
           return await sendButtonMutation(button.caption);
         case 'ActionButtonUrl':
-          return await Linking.openURL(button.url);
+          if (onPressLink) {
+            return await onPressLink(button.url);
+          } else {
+            return await Linking.openURL(button.url);
+          }
         case 'ActionButtonCall': {
           return await Linking.openURL('tel:' + button.phoneNumber);
         }

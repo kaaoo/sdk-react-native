@@ -5,6 +5,7 @@ import styles from './styles';
 import { useColors } from '../../hooks/colors';
 import type { DetectedLink } from '../../types/other';
 import { isDeepLink } from '../../utils/functions';
+import { useOnPressLink } from '../../hooks/onPressLink';
 
 interface Props {
   payload: AnnouncementPayload;
@@ -13,12 +14,25 @@ interface Props {
 
 const AnnouncementMessage = ({ payload, isNewest }: Props) => {
   const { colors } = useColors();
+  const onPressLink = useOnPressLink();
 
-  const handleLinkPress = async (url: string) => {
-    try {
-      if (Platform.OS === 'ios') {
-        if (isDeepLink(url)) {
-          await Linking.openURL(url);
+  const handleLinkPress = React.useCallback(
+    async (url: string) => {
+      try {
+        if (onPressLink) {
+          await onPressLink(url);
+          return;
+        }
+        if (Platform.OS === 'ios') {
+          if (isDeepLink(url)) {
+            await Linking.openURL(url);
+          } else {
+            if (url.startsWith('http://')) {
+              await Linking.openURL(url.replace('http://', 'https://'));
+            } else {
+              await Linking.openURL(url);
+            }
+          }
         } else {
           if (url.startsWith('http://')) {
             await Linking.openURL(url.replace('http://', 'https://'));
@@ -26,17 +40,12 @@ const AnnouncementMessage = ({ payload, isNewest }: Props) => {
             await Linking.openURL(url);
           }
         }
-      } else {
-        if (url.startsWith('http://')) {
-          await Linking.openURL(url.replace('http://', 'https://'));
-        } else {
-          await Linking.openURL(url);
-        }
+      } catch (e) {
+        console.log(e);
       }
-    } catch (e) {
-      console.log(e);
-    }
-  };
+    },
+    [onPressLink]
+  );
 
   const detectLinks = useMemo(() => {
     const { text } = payload;
@@ -130,7 +139,7 @@ const AnnouncementMessage = ({ payload, isNewest }: Props) => {
     }
 
     return <>{elements}</>;
-  }, [colors.announcementTextColor, payload]);
+  }, [colors.announcementTextColor, handleLinkPress, payload]);
 
   return isNewest || payload.visibility === 'Persistent' ? (
     <View

@@ -5,6 +5,7 @@ import styles from './styles';
 import { useColors } from '../../hooks/colors';
 import { timestampToDate } from '../../utils/functions';
 import { useTheme } from '../../hooks/theme';
+import { useOnPressLink } from '../../hooks/onPressLink';
 
 interface Props {
   payload: UrlButtonTemplatePayload;
@@ -15,9 +16,14 @@ const UrlButtonTemplateMessage = ({ payload, time }: Props) => {
   const { colors } = useColors();
   const { theme } = useTheme();
   const [showStatus, setShowStatus] = useState(false);
+  const onPressLink = useOnPressLink();
 
   const onOpenSite = async () => {
     try {
+      if (onPressLink) {
+        await onPressLink(payload.url);
+        return;
+      }
       await Linking.openURL(payload.url);
     } catch (e) {}
   };
