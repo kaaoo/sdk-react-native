@@ -6,9 +6,6 @@ const OnPressLinkContext = createContext<((url: string) => void) | undefined>(
 
 export const useOnPressLink = () => {
   const context = useContext(OnPressLinkContext);
-  if (!context) {
-    throw new Error('useOnPressLink must be used within a OnPressLinkProvider');
-  }
   return context;
 };
 
