@@ -13,9 +13,13 @@ Pod::Spec.new do |s|
 
   s.platforms    = { :ios => "12.4" }
   s.source       = { :git => "https://github.com/kaaoo/sdk-react-native.git", :tag => "#{s.version}" }
-  s.exclude_files = "ios/*ImagePicker*.{h,m,mm}"
+    s.exclude_files = [
+      "ios/*ImagePicker*.{h,m,mm}",
+      "ios/build/*",
+      "ios/generated/**/*"
+    ]
   s.source_files = "ios/**/*.{h,m,mm}"
-
+  s.static_framework = true
   # Use install_modules_dependencies helper to install the dependencies if React Native version >=0.71.0.
   # See https://github.com/facebook/react-native/blob/febf6b7f33fdb4904669f99d795eba4c0f95d7bf/scripts/cocoapods/new_architecture.rb#L79.
   if respond_to?(:install_modules_dependencies, true)
@@ -29,7 +33,10 @@ Pod::Spec.new do |s|
     s.pod_target_xcconfig    = {
         "HEADER_SEARCH_PATHS" => "\"$(PODS_ROOT)/boost\"",
         "OTHER_CPLUSPLUSFLAGS" => "-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1",
-        "CLANG_CXX_LANGUAGE_STANDARD" => "c++17"
+        "CLANG_CXX_LANGUAGE_STANDARD" => "c++17",
+                "DEFINES_MODULE" => "YES",
+                "OTHER_LDFLAGS" => "-force_load $(PODS_CONFIGURATION_BUILD_DIR)/react-native-zowiesdk/react_native_zowiesdk.framework/react_native_zowiesdk"
+
     }
     s.dependency "React-Codegen"
     s.dependency "RCT-Folly"
