@@ -13,8 +13,7 @@ Pod::Spec.new do |s|
 
   s.platforms    = { :ios => "12.4" }
   s.source       = { :git => "https://github.com/kaaoo/sdk-react-native.git", :tag => "#{s.version}" }
-  s.exclude_files = "ios/ImagePickerManagerZowie.{h,m,mm}"
-
+  s.exclude_files = "ios/*ImagePicker*.{h,m,mm}"
   s.source_files = "ios/**/*.{h,m,mm}"
 
   # Use install_modules_dependencies helper to install the dependencies if React Native version >=0.71.0.
